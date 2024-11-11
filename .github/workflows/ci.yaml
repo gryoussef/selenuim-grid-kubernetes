@@ -37,7 +37,7 @@ jobs:
         version: v3.8.1
     - name: Package Helm chart
       run: |
-        helm package ./chart
+        helm package ./helm
     - name: Upload Helm chart
       uses: actions/upload-artifact@v4
       with:
