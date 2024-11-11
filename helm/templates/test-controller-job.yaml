@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-selenium-test-controller
+  labels:
+    app: {{ .Release.Name }}-selenium-test-controller
+spec:
+  backoffLimit: {{ .Values.testController.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-selenium-test-controller
+    spec:
+      containers:
+      - name: test-controller
+        image: "{{ .Values.testController.image.repository }}:{{ .Values.testController.image.tag }}"
+        envFrom:
+        - configMapRef:
+            name: {{ .Release.Name }}-selenium-grid-config
+        env:
+        - name: SELENIUM_GRID_URL
+          value: http://{{ .Release.Name }}-selenium-hub:4444/wd/hub
+        - name: PYTHONPATH
+          value: /app
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: TEST_RETRIES
+          value: "3"
+        {{- with .Values.testController.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        volumeMounts:
+        - name: reports
+          mountPath: /app/reports
+        - name: screenshots
+          mountPath: /app/screenshots
+        command: ["pytest"]
+        args: ["-v", "tests/"]
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |
+              curl -sSL 'http://{{ .Release.Name }}-selenium-hub:4444/wd/hub/status' | grep 'ready' > /dev/null
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 30
+      volumes:
+      - name: reports
+        emptyDir: {}
+      - name: screenshots
+        emptyDir: {}
+      restartPolicy: Never

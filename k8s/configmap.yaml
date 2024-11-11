@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: selenium-grid-config
+data:
+  GRID_DEBUG: "true"
+  GRID_TIMEOUT: "240"
+  SE_NODE_MAX_SESSIONS: "8"
+  SE_NODE_SESSION_TIMEOUT: "300"
+  SE_SESSION_REQUEST_TIMEOUT: "300"
+  SE_SESSION_RETRY_INTERVAL: "15"
+  SE_DRAIN_AFTER_SESSION_COUNT: "0"
+  SE_ENABLE_TRACING: "false"
+  SE_OTEL_SERVICE_NAME: ""
+  SE_OTEL_TRACES_ENABLED: "false"
+  SE_START_XVFB: "false"
+  JAVA_OPTS: "-Dwebdriver.http.factory=jdk-http-client"

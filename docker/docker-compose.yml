@@ -1,0 +1,100 @@
+version: '3'
+
+networks:
+  selenium-grid-network:
+    name: selenium-grid-network
+    driver: bridge
+
+services:
+  selenium-hub:
+    image: selenium/hub:4.26.0
+    container_name: selenium-hub
+    ports:
+      - "4442:4442"  # Event bus publish port
+      - "4443:4443"  # Event bus subscribe port
+      - "4444:4444"  # Hub port
+    networks:
+      - selenium-grid-network
+    healthcheck:
+      test: curl -f http://localhost:4444/wd/hub/status || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      - GRID_DEBUG=true
+      - GRID_TIMEOUT=240
+      - SE_ENABLE_TRACING=false
+      - SE_OTEL_SERVICE_NAME=
+      - SE_OTEL_TRACES_ENABLED=false
+      - SE_NODE_MAX_SESSIONS=8
+      - SE_NODE_SESSION_TIMEOUT=300
+      - SE_SESSION_REQUEST_TIMEOUT=300
+      - SE_SESSION_RETRY_INTERVAL=15
+      - SE_DRAIN_AFTER_SESSION_COUNT=0
+      - JAVA_OPTS=-Dwebdriver.http.factory=jdk-http-client
+
+  chrome:
+    image: selenium/node-chrome:130.0.6723.91
+    container_name: chrome-node
+    shm_size: 2g
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+    networks:
+      - selenium-grid-network
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_SESSION_TIMEOUT=300
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - START_XVFB=false
+      - SE_NODE_GRID_URL=http://selenium-hub:4444
+      - JAVA_OPTS=-Dwebdriver.http.factory=jdk-http-client
+      - SE_ENABLE_TRACING=false
+      - SE_START_XVFB=true
+      - SE_OTEL_TRACES_ENABLED=false
+      - SE_NODE_HOST=chrome
+      - SE_NODE_MAX_SESSIONS=4
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  test-runner:
+    build: 
+      context: ../
+      dockerfile: docker/Dockerfile
+    container_name: test-runner
+    depends_on:
+      selenium-hub:
+        condition: service_healthy
+      chrome:
+        condition: service_healthy
+    networks:
+      - selenium-grid-network
+    environment:
+      - SELENIUM_GRID_URL=http://selenium-hub:4444/wd/hub
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - TEST_RETRIES=3
+    volumes:
+      - ./reports:/app/reports
+      - ./screenshots:/app/screenshots
+    command: >
+      bash -c "
+        echo 'Waiting for Grid...' &&
+        while ! curl -sSL 'http://selenium-hub:4444/wd/hub/status' 2>&1 | grep 'ready' > /dev/null; do 
+          echo 'Waiting for hub...' && 
+          sleep 1; 
+        done &&
+        echo 'Waiting for node to register...' &&
+        while ! curl -sSL 'http://selenium-hub:4444/wd/hub/status' 2>&1 | grep 'chrome' > /dev/null; do 
+          echo 'Waiting for chrome node...' && 
+          sleep 1; 
+        done &&
+        echo 'Grid is ready - Starting tests' &&
+        cd /app &&
+        pytest -v tests/"

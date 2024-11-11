@@ -1,0 +1,43 @@
+hub:
+  image:
+    repository: selenium/hub
+    tag: 4.26.0
+  replicas: 1
+  resources: {}
+
+chromeNode:
+  image:
+    repository: selenium/node-chrome
+    tag: "130.0.6723.91"
+  replicas: 1
+  resources:
+    limits:
+      memory: "1000Mi"
+      cpu: "500m"
+
+testController:
+  backoffLimit: 3
+  image:
+    repository: gryoussef/selenuim-tests
+    tag: v1.0.0
+  resources:
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+    requests:
+      memory: "256Mi"
+      cpu: "125m"
+
+gridConfig:
+  debug: "true"
+  timeout: "240"
+  nodeMaxSessions: "8"
+  nodeSessionTimeout: "300"
+  sessionRequestTimeout: "300"
+  sessionRetryInterval: "15"
+  drainAfterSessionCount: "0"
+  enableTracing: "false"
+  otelServiceName: ""
+  otelTracesEnabled: "false"
+  startXvfb: "false"
+  javaOpts: "-Dwebdriver.http.factory=jdk-http-client"

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-selenium-grid-config
+data:
+  GRID_DEBUG: {{ .Values.gridConfig.debug | quote }}
+  GRID_TIMEOUT: {{ .Values.gridConfig.timeout | quote }}
+  SE_NODE_MAX_SESSIONS: {{ .Values.gridConfig.nodeMaxSessions | quote }}
+  SE_NODE_SESSION_TIMEOUT: {{ .Values.gridConfig.nodeSessionTimeout | quote }}
+  SE_SESSION_REQUEST_TIMEOUT: {{ .Values.gridConfig.sessionRequestTimeout | quote }}
+  SE_SESSION_RETRY_INTERVAL: {{ .Values.gridConfig.sessionRetryInterval | quote }}
+  SE_DRAIN_AFTER_SESSION_COUNT: {{ .Values.gridConfig.drainAfterSessionCount | quote }}
+  SE_ENABLE_TRACING: {{ .Values.gridConfig.enableTracing | quote }}
+  SE_OTEL_SERVICE_NAME: {{ .Values.gridConfig.otelServiceName | quote }}
+  SE_OTEL_TRACES_ENABLED: {{ .Values.gridConfig.otelTracesEnabled | quote }}
+  SE_START_XVFB: {{ .Values.gridConfig.startXvfb | quote }}
+  JAVA_OPTS: {{ .Values.gridConfig.javaOpts | quote }}

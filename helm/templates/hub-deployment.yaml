@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-selenium-hub
+  labels:
+    app: {{ .Release.Name }}-selenium-hub
+spec:
+  replicas: {{ .Values.hub.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-selenium-hub
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-selenium-hub
+    spec:
+      containers:
+      - name: selenium-hub
+        image: "{{ .Values.hub.image.repository }}:{{ .Values.hub.image.tag }}"
+        ports:
+        - name: web
+          containerPort: 4444
+        - name: publish
+          containerPort: 4442
+        - name: subscribe
+          containerPort: 4443
+        envFrom:
+        - configMapRef:
+            name: {{ .Release.Name }}-selenium-grid-config
+        {{- with .Values.hub.resources }}
+        resources:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}

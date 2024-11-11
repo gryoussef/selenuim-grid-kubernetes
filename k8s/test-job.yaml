@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: selenium-test-controller
+  labels:
+    app: selenium-test-controller
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: selenium-test-controller
+    spec:
+      containers:
+      - name: test-controller
+        image: gryoussef/selenuim-tests:v1.0.0
+        envFrom:
+        - configMapRef:
+            name: selenium-grid-config
+        env:
+        - name: SELENIUM_GRID_URL
+          value: http://selenium-hub:4444/wd/hub
+        - name: PYTHONPATH
+          value: /app
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: TEST_RETRIES
+          value: "3"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+          requests:
+            memory: "256Mi"
+            cpu: "125m"
+        volumeMounts:
+        - name: reports
+          mountPath: /app/reports
+        - name: screenshots
+          mountPath: /app/screenshots
+        command: ["pytest"]
+        args: ["-v", "tests/"]
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |
+              curl -sSL 'http://selenium-hub:4444/wd/hub/status' | grep 'ready' > /dev/null
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 30
+      volumes:
+      - name: reports
+        emptyDir: {}
+      - name: screenshots
+        emptyDir: {}
+      restartPolicy: Never

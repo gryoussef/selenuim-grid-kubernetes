@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selenium-hub
+  labels:
+    app: selenium-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: selenium-hub
+  template:
+    metadata:
+      labels:
+        app: selenium-hub
+    spec:
+      containers:
+      - name: selenium-hub
+        image: selenium/hub:4.26.0
+        ports:
+        - name: web
+          containerPort: 4444
+        - name: publish
+          containerPort: 4442
+        - name: subscribe
+          containerPort: 4443
+        envFrom:
+        - configMapRef:
+            name: selenium-grid-config
